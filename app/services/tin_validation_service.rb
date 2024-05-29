@@ -18,13 +18,15 @@ class TinValidationService
     result = nil
     format_used = nil
 
-    FORMATS[country_code].any? do |format|
+    FORMATS[country_code].each do |format|
       regex = format_to_regex(format)
-      if tin.match?(regex)
-        result = true
-        format_used = format
-        break
-      end
+      next unless tin.match?(regex)
+
+      next if country_code == 'AU' && tin.length == 11 && !AbnValidationService.new(tin).valid_abn?
+
+      result = true
+      format_used = format
+      break
     end
 
     return [false, 'TIN format does not match', ''] unless result
