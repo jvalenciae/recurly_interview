@@ -13,25 +13,28 @@ class TinValidationService
   end
 
   def valid_number?
-    return [false, 'Country code does not exists', ''] unless FORMATS[country_code]
+    return { result: false, message: 'Country code does not exists' } unless FORMATS[country_code]
 
-    result = nil
-    format_used = nil
+    response = { result: false, message: 'TIN format does not match', organisation_name: nil, address: {} }
 
     FORMATS[country_code].each do |format|
       regex = format_to_regex(format)
       next unless tin.match?(regex)
 
-      next if country_code == 'AU' && tin.length == 11 && !AbnValidationService.new(tin).valid_abn?
+      if country_code == 'AU' && tin.length == 11
+        response[:local_validation] = AbnValidationService.new(tin).local_valid_abn?
+        response.merge!(AbnValidationService.new(tin).external_valid_abn?)
+        next if response[:local_validation].blank? || response[:ext_validation_result].blank?
+      end
 
-      result = true
-      format_used = format
+      response[:result] = true
+      response[:format_used] = format
+      response[:message] = ''
       break
     end
 
-    return [false, 'TIN format does not match', ''] unless result
-
-    [true, '', format_tin(tin, format_used)]
+    response[:formatted_tin] = format_tin(tin, response[:format_used]) if response[:result]
+    response
   end
 
   private

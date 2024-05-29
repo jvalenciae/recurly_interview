@@ -9,10 +9,10 @@ RSpec.describe TinValidationService do
       let(:country_code) { 'AU' }
 
       it 'returns true, no error message, and the formatted TIN' do
-        result, error, formatted_tin = subject
-        expect(result).to be true
-        expect(error).to be_empty
-        expect(formatted_tin).to eq('123 456 789')
+        response = subject
+        expect(response[:result]).to be true
+        expect(response[:message]).to be_empty
+        expect(response[:formatted_tin]).to eq('123 456 789')
       end
     end
 
@@ -21,10 +21,10 @@ RSpec.describe TinValidationService do
       let(:country_code) { 'XX' }
 
       it 'returns false, an error message, and an empty formatted TIN' do
-        result, error, formatted_tin = subject
-        expect(result).to be false
-        expect(error).to eq('Country code does not exists')
-        expect(formatted_tin).to be_empty
+        response = subject
+        expect(response[:result]).to be false
+        expect(response[:message]).to eq('Country code does not exists')
+        expect(response[:formatted_tin]).to be_blank
       end
     end
 
@@ -33,10 +33,10 @@ RSpec.describe TinValidationService do
       let(:country_code) { 'AU' }
 
       it 'returns false, an error message, and an empty formatted TIN' do
-        result, error, formatted_tin = subject
-        expect(result).to be false
-        expect(error).to eq('TIN format does not match')
-        expect(formatted_tin).to be_empty
+        response = subject
+        expect(response[:result]).to be false
+        expect(response[:message]).to eq('TIN format does not match')
+        expect(response[:formatted_tin]).to be_blank
       end
     end
 
@@ -44,31 +44,35 @@ RSpec.describe TinValidationService do
       let(:tin) { '10120000004' }
       let(:country_code) { 'AU' }
 
-      before do
-        allow_any_instance_of(AbnValidationService).to receive(:valid_abn?).and_return(true)
-      end
-
       it 'returns true, no error message, and the formatted TIN' do
-        result, error, formatted_tin = subject
-        expect(result).to be true
-        expect(error).to be_empty
-        expect(formatted_tin).to eq('10 120 000 004')
+        response = subject
+        expect(response[:result]).to be true
+        expect(response[:message]).to be_empty
+        expect(response[:formatted_tin]).to eq('10 120 000 004')
       end
     end
 
-    context 'when the TIN matches the regex but is not a valid ABN for AU' do
+    context 'when the TIN matches the regex ABN is not found' do
       let(:tin) { '10120000005' }
       let(:country_code) { 'AU' }
 
-      before do
-        allow_any_instance_of(AbnValidationService).to receive(:valid_abn?).and_return(false)
+      it 'returns false, an error message, and an empty formatted TIN' do
+        response = subject
+        expect(response[:result]).to be false
+        expect(response[:message]).to eq('ABN not found')
+        expect(response[:formatted_tin]).to be_blank
       end
+    end
+
+    context 'when the TIN matches the regex but ABN is not registered for GST' do
+      let(:tin) { '10000000000' }
+      let(:country_code) { 'AU' }
 
       it 'returns false, an error message, and an empty formatted TIN' do
-        result, error, formatted_tin = subject
-        expect(result).to be false
-        expect(error).to eq('TIN format does not match')
-        expect(formatted_tin).to be_empty
+        response = subject
+        expect(response[:result]).to be false
+        expect(response[:message]).to eq('ABN is not registered for GST')
+        expect(response[:formatted_tin]).to be_blank
       end
     end
   end

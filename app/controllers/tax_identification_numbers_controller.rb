@@ -1,11 +1,11 @@
 class TaxIdentificationNumbersController < ApplicationController
   def validate
-    result, error, formatted_tin = TinValidationService.new(tin_params[:tin], tin_params[:country_code]).valid_number?
+    response = TinValidationService.new(tin_params[:tin], tin_params[:country_code]).valid_number?
 
-    if result
-      render json: { valid: true, formatted_tin: }, status: :ok
+    if response[:result]
+      render json: response, status: :ok
     else
-      render json: { valid: false, message: error }, status: :bad_request
+      render json: response, status: :unprocessable_entity
     end
   end
 
